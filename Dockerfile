@@ -1,5 +1,5 @@
-FROM gcr.io/distroless/static-debian12
+FROM ubuntu:noble
 
-COPY betterbuttons /
+COPY betterbuttons /app/betterbuttons
 
-ENTRYPOINT ["/betterbuttons"]
+ENTRYPOINT ["/app/betterbuttons"]

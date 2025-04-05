@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/eclipse/paho.mqtt.golang"
@@ -16,7 +17,7 @@ type MQTT struct {
 	logger        *slog.Logger
 }
 
-func (m *MQTT) Start(mqttUrl string) error {
+func (m *MQTT) Start(ctx context.Context, mqttUrl string) error {
 	opts := mqtt.NewClientOptions()
 	opts.ClientID = "BetterButtons"
 
@@ -37,6 +38,8 @@ func (m *MQTT) Start(mqttUrl string) error {
 
 	for {
 		select {
+		case <-ctx.Done():
+			return nil
 		case <-retry.C:
 			token := m.client.Connect()
 			token.Wait()

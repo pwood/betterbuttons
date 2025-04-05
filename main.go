@@ -34,7 +34,7 @@ func main() {
 	h.Init(ctx, *homekitDir)
 	go b.Run(ctx)
 
-	if err := m.Start(*mqttURL); err != nil {
+	if err := m.Start(ctx, *mqttURL); err != nil {
 		logger.Error("Failed to start MQTT client.", "err", err)
 		panic(err)
 	}
