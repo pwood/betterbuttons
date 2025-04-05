@@ -2,4 +2,4 @@ FROM scratch
 
 COPY betterbuttons /
 
-CMD ["/betterbuttons"]
+ENTRYPOINT ["/betterbuttons"]
