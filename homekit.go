@@ -137,11 +137,13 @@ func (h *HomeKit) constructServer(buttons []*ButtonDevice) *hap.Server {
 			invalidPins = append(invalidPins, p)
 		}
 
+	makePin:
 		for {
 			pin = fmt.Sprintf("%08d", rand.Intn(99999999))
 
 			if !slices.Contains(invalidPins, pin) {
 				fs.Set("serverPin", []byte(pin))
+				break makePin
 			}
 		}
 	}
