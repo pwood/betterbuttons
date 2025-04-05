@@ -45,6 +45,8 @@ type Manager struct {
 	Devices   map[string]*ButtonDevice
 	HKManager *HomeKit
 	logger    *slog.Logger
+
+	DevicesDirty bool
 }
 
 func (m *Manager) OfferDevice(d Device) bool {
@@ -67,6 +69,8 @@ func (m *Manager) OfferDevice(d Device) bool {
 		m.Devices[d.IEEEAddress] = bd
 
 		m.logger.Info("Accepted new device.", "id", d.IEEEAddress, "manufacturer", d.Manufacturer, "model", d.ModelID, "buttonCount", len(bd.Buttons))
+
+		m.DevicesDirty = true
 
 		return true
 	}
@@ -283,6 +287,12 @@ func (m *Manager) Run(ctx context.Context) {
 }
 
 func (m *Manager) UpdateHomeKit() {
+	if !m.DevicesDirty {
+		return
+	}
+
+	m.DevicesDirty = false
+
 	m.logger.Info("Refreshing HomeKit Server.")
 
 	var buttons []*ButtonDevice
