@@ -8,7 +8,9 @@ import (
 	"github.com/brutella/hap/service"
 	"github.com/carlmjohnson/versioninfo"
 	"log/slog"
+	"math/rand"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -125,7 +127,26 @@ func (h *HomeKit) constructServer(buttons []*ButtonDevice) *hap.Server {
 		return nil
 	}
 
-	server.Pin = "98386833"
+	d, err := fs.Get("serverPin")
+	pin := string(d)
+
+	if err != nil {
+		var invalidPins []string
+
+		for p, _ := range hap.InvalidPins {
+			invalidPins = append(invalidPins, p)
+		}
+
+		for {
+			pin = fmt.Sprintf("%08d", rand.Intn(99999999))
+
+			if !slices.Contains(invalidPins, pin) {
+				fs.Set("serverPin", []byte(pin))
+			}
+		}
+	}
+
+	server.Pin = pin
 
 	return server
 }
@@ -137,7 +158,7 @@ func (h *HomeKit) Restart(buttons []*ButtonDevice) {
 	}
 
 	h.server = h.constructServer(buttons)
-	
+
 	h.logger.Info("Starting new HomeKit server.", "pin", h.server.Pin)
 
 	ctx, cancel := context.WithCancel(h.pctx)
