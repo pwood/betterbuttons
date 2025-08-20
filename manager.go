@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/brutella/hap/characteristic"
-	"github.com/brutella/hap/service"
 	"log/slog"
 	"math"
 	"strings"
 	"time"
+
+	"github.com/brutella/hap/characteristic"
+	"github.com/brutella/hap/service"
 )
 
 type Button struct {
@@ -87,7 +88,7 @@ func lookupRegistry(d Device) (func(*ButtonDevice), ActionMapper, bool) {
 		}
 	case "Signify Netherlands B.V.":
 		switch d.ModelID {
-		case "RWL022":
+		case "RWL022", "LCT007":
 			return makePhilipsRWL02X, mappingPhilipsRWL021, true
 		}
 	case "eWeLink":
