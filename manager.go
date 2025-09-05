@@ -35,7 +35,8 @@ type ButtonDevice struct {
 	SupportsBattery bool
 	HKBattery       *service.BatteryService
 
-	Buttons []*Button
+	SynthesiseButtons bool
+	Buttons           []*Button
 
 	MappingFunction ActionMapper
 }
@@ -103,6 +104,7 @@ func lookupRegistry(d Device) (func(*ButtonDevice), ActionMapper, bool) {
 
 func makeeWeLinkSNZB01P(bd *ButtonDevice) {
 	bd.SupportsBattery = true
+	bd.SynthesiseButtons = false
 
 	bd.Buttons = []*Button{
 		{
@@ -116,30 +118,31 @@ func makeeWeLinkSNZB01P(bd *ButtonDevice) {
 
 func makePhilipsRWL02X(bd *ButtonDevice) {
 	bd.SupportsBattery = true
+	bd.SynthesiseButtons = false
 
 	bd.Buttons = []*Button{
 		{
 			Name:           "On",
 			SupportsSingle: true,
-			SupportsDouble: true,
+			SupportsDouble: false,
 			SupportsLong:   true,
 		},
 		{
 			Name:           "Up",
 			SupportsSingle: true,
-			SupportsDouble: true,
+			SupportsDouble: false,
 			SupportsLong:   true,
 		},
 		{
 			Name:           "Down",
 			SupportsSingle: true,
-			SupportsDouble: true,
+			SupportsDouble: false,
 			SupportsLong:   true,
 		},
 		{
 			Name:           "Off",
 			SupportsSingle: true,
-			SupportsDouble: true,
+			SupportsDouble: false,
 			SupportsLong:   true,
 		},
 	}
@@ -161,7 +164,7 @@ func mappingPhilipsRWL021(update DeviceUpdate) (int, ButtonAction) {
 	actionParts := strings.SplitN(update.Action, "_", 2)
 
 	button := 0
-	action := Press
+	action := None
 
 	switch actionParts[0] {
 	case "on":
@@ -176,11 +179,9 @@ func mappingPhilipsRWL021(update DeviceUpdate) (int, ButtonAction) {
 
 	switch actionParts[1] {
 	case "press":
-		action = Press
+		action = Single
 	case "hold":
-		action = Held
-	case "press_release", "hold_release":
-		action = Release
+		action = Long
 	}
 
 	return button, action
@@ -222,52 +223,54 @@ func (m *Manager) Update(u DeviceUpdate) {
 	n, a := bd.MappingFunction(u)
 	button := bd.Buttons[n]
 
-	m.UpdateButton(button, a)
+	m.UpdateButton(button, bd, a)
 }
 
-func (m *Manager) UpdateButton(button *Button, a ButtonAction) {
+func (m *Manager) UpdateButton(b *Button, bd *ButtonDevice, a ButtonAction) {
 	switch a {
 	case Single:
-		button.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventSinglePress)
+		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventSinglePress)
 	case Double:
-		button.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventDoublePress)
+		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventDoublePress)
 	case Long:
-		button.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventLongPress)
+		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventLongPress)
 	default:
-		m.SynthesiseButtonInput(button, a)
+		if bd.SynthesiseButtons {
+			m.SynthesiseButtonInput(b, a)
+		}
 	}
 }
 
 const PressActionTimeout = 300 * time.Millisecond
 
-func (m *Manager) SynthesiseButtonInput(button *Button, a ButtonAction) {
-	pa := button.LastAction
-	button.LastAction = a
+func (m *Manager) SynthesiseButtonInput(b *Button, a ButtonAction) {
+	pa := b.LastAction
+	b.LastAction = a
 
-	button.ActionTime = time.Now()
+	b.ActionTime = time.Now()
 
 	if a == Held && pa != Held {
-		button.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventLongPress)
+		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventLongPress)
 	}
 
 	if a == Release && pa == Press {
-		if button.PressChain == 1 {
-			button.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventDoublePress)
-			button.LastAction = None
-			button.PressChain = 0
+		if b.PressChain == 1 {
+			b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventDoublePress)
+			b.LastAction = None
+			b.PressChain = 0
 		} else {
-			button.PressChain = 1
+			b.PressChain = 1
 		}
 	} else if a == Release && pa == Held {
-		button.LastAction = None
+		b.LastAction = None
 	}
 }
 
-func (m *Manager) SynthesiseButtonProcess(button *Button) {
-	if button.LastAction == Release && time.Since(button.ActionTime) > PressActionTimeout {
-		button.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventSinglePress)
-		button.LastAction = None
-		button.PressChain = 0
+func (m *Manager) SynthesiseButtonProcess(b *Button) {
+	if b.LastAction == Release && time.Since(b.ActionTime) > PressActionTimeout {
+		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventSinglePress)
+		b.LastAction = None
+		b.PressChain = 0
 	}
 }
 
@@ -279,8 +282,10 @@ func (m *Manager) Run(ctx context.Context) {
 			return
 		case <-ticker.C:
 			for _, bd := range m.Devices {
-				for _, button := range bd.Buttons {
-					m.SynthesiseButtonProcess(button)
+				if bd.SynthesiseButtons {
+					for _, button := range bd.Buttons {
+						m.SynthesiseButtonProcess(button)
+					}
 				}
 			}
 		}
