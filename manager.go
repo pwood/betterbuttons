@@ -89,7 +89,7 @@ func lookupRegistry(d Device) (func(*ButtonDevice), ActionMapper, bool) {
 		}
 	case "Signify Netherlands B.V.":
 		switch d.ModelID {
-		case "RWL022", "LCT007":
+		case "RWL022":
 			return makePhilipsRWL02X, mappingPhilipsRWL021, true
 		}
 	case "eWeLink":
