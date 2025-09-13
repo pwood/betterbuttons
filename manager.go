@@ -97,9 +97,9 @@ func lookupRegistry(d Device) (func(*ButtonDevice), ActionMapper, bool) {
 		case "SNZB-01P":
 			return makeeWeLinkSNZB01P, mappingSimple, true
 		}
-	case "IKEA":
+	case "IKEA of Sweden":
 		switch d.ModelID {
-		case "E1766":
+		case "TRADFRI open/close remote":
 			return makeIKEAE1766, mappingDouble, true
 		}
 	}
