@@ -97,6 +97,11 @@ func lookupRegistry(d Device) (func(*ButtonDevice), ActionMapper, bool) {
 		case "SNZB-01P":
 			return makeeWeLinkSNZB01P, mappingSimple, true
 		}
+	case "IKEA":
+		switch d.ModelID {
+		case "E1766":
+			return makeIKEAE1766, mappingDouble, true
+		}
 	}
 
 	return nil, nil, false
@@ -112,6 +117,26 @@ func makeeWeLinkSNZB01P(bd *ButtonDevice) {
 			SupportsSingle: true,
 			SupportsDouble: true,
 			SupportsLong:   true,
+		},
+	}
+}
+
+func makeIKEAE1766(bd *ButtonDevice) {
+	bd.SupportsBattery = true
+	bd.SynthesiseButtons = false
+
+	bd.Buttons = []*Button{
+		{
+			Name:           "Open",
+			SupportsSingle: true,
+			SupportsDouble: false,
+			SupportsLong:   false,
+		},
+		{
+			Name:           "Close",
+			SupportsSingle: true,
+			SupportsDouble: false,
+			SupportsLong:   false,
 		},
 	}
 }
@@ -195,6 +220,17 @@ func mappingSimple(update DeviceUpdate) (int, ButtonAction) {
 		return 0, Double
 	case "long":
 		return 0, Long
+	}
+
+	return 0, None
+}
+
+func mappingDouble(update DeviceUpdate) (int, ButtonAction) {
+	switch update.Action {
+	case "open":
+		return 0, Single
+	case "close":
+		return 1, Single
 	}
 
 	return 0, None
