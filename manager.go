@@ -243,7 +243,11 @@ func (m *Manager) Update(u DeviceUpdate) {
 	}
 
 	if bd.SupportsBattery && bd.HKBattery != nil {
-		if err := bd.HKBattery.BatteryLevel.SetValue(int(math.Round(u.Battery))); err != nil {
+		battVal := int(math.Round(u.Battery))
+
+		m.logger.Debug("Battery levels.", "raw", u.Battery, "rounded", battVal)
+
+		if err := bd.HKBattery.BatteryLevel.SetValue(battVal); err != nil {
 			m.logger.Error("Failed to set battery level", "err", err)
 		}
 
