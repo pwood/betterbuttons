@@ -85,12 +85,6 @@ func (h *HomeKit) constructServer(buttons []*ButtonDevice) *hap.Server {
 			b.HKBattery = s
 		}
 
-		sl := service.NewServiceLabel()
-		sl.ServiceLabelNamespace.SetValue(characteristic.ServiceLabelNamespaceArabicNumerals)
-		sl.Id = id
-		id++
-		acc.AddS(sl.S)
-
 		for n, bb := range b.Buttons {
 			s := service.NewStatelessProgrammableSwitch()
 			s.Id = id
@@ -125,6 +119,12 @@ func (h *HomeKit) constructServer(buttons []*ButtonDevice) *hap.Server {
 				h.logger.Debug("Publishing button event.", "id", s.Id, "action", new)
 			})
 		}
+
+		sl := service.NewServiceLabel()
+		sl.ServiceLabelNamespace.SetValue(characteristic.ServiceLabelNamespaceArabicNumerals)
+		sl.Id = id
+		id++
+		acc.AddS(sl.S)
 
 		accessories = append(accessories, acc)
 	}
