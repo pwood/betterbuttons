@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/brutella/hap/accessory"
-	"github.com/brutella/hap/characteristic"
-	"github.com/brutella/hap/service"
-	"github.com/carlmjohnson/versioninfo"
 	"log/slog"
 	"math/rand"
 	"net/http"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/brutella/hap/accessory"
+	"github.com/brutella/hap/characteristic"
+	"github.com/brutella/hap/service"
+	"github.com/carlmjohnson/versioninfo"
 )
 import "github.com/brutella/hap"
 
@@ -75,6 +76,7 @@ func (h *HomeKit) constructServer(buttons []*ButtonDevice) *hap.Server {
 		if b.SupportsBattery {
 			s := service.NewBatteryService()
 			s.Id = id
+			s.ChargingState.SetValue(characteristic.ChargingStateNotChargeable)
 			id++
 			acc.AddS(s.S)
 

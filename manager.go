@@ -243,7 +243,9 @@ func (m *Manager) Update(u DeviceUpdate) {
 	}
 
 	if bd.SupportsBattery && bd.HKBattery != nil {
-		bd.HKBattery.BatteryLevel.SetValue(int(math.Round(u.Battery)))
+		if err := bd.HKBattery.BatteryLevel.SetValue(int(math.Round(u.Battery))); err != nil {
+			m.logger.Error("Failed to set battery level", "err", err)
+		}
 
 		if u.Battery < 20 {
 			bd.HKBattery.StatusLowBattery.SetValue(characteristic.StatusLowBatteryBatteryLevelLow)
