@@ -273,7 +273,9 @@ func (m *Manager) UpdateButton(b *Button, bd *ButtonDevice, a ButtonAction) {
 		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventLongPress)
 
 	case Held:
-		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventLongPress)
+		if b.LastAction == Press {
+			b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventLongPress)
+		}
 	case Release:
 		if b.LastAction == Press {
 			b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventSinglePress)
