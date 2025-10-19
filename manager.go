@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"math"
 	"strings"
@@ -35,8 +34,7 @@ type ButtonDevice struct {
 	SupportsBattery bool
 	HKBattery       *service.BatteryService
 
-	SynthesiseButtons bool
-	Buttons           []*Button
+	Buttons []*Button
 
 	MappingFunction ActionMapper
 }
@@ -109,7 +107,6 @@ func lookupRegistry(d Device) (func(*ButtonDevice), ActionMapper, bool) {
 
 func makeeWeLinkSNZB01P(bd *ButtonDevice) {
 	bd.SupportsBattery = true
-	bd.SynthesiseButtons = false
 
 	bd.Buttons = []*Button{
 		{
@@ -123,7 +120,6 @@ func makeeWeLinkSNZB01P(bd *ButtonDevice) {
 
 func makeIKEAE1766(bd *ButtonDevice) {
 	bd.SupportsBattery = true
-	bd.SynthesiseButtons = false
 
 	bd.Buttons = []*Button{
 		{
@@ -143,7 +139,6 @@ func makeIKEAE1766(bd *ButtonDevice) {
 
 func makePhilipsRWL02X(bd *ButtonDevice) {
 	bd.SupportsBattery = true
-	bd.SynthesiseButtons = false
 
 	bd.Buttons = []*Button{
 		{
@@ -204,9 +199,11 @@ func mappingPhilipsRWL021(update DeviceUpdate) (int, ButtonAction) {
 
 	switch actionParts[1] {
 	case "press":
-		action = Single
+		action = Press
 	case "hold":
-		action = Long
+		action = Held
+	case "press_release":
+		action = Release
 	}
 
 	return button, action
@@ -274,62 +271,16 @@ func (m *Manager) UpdateButton(b *Button, bd *ButtonDevice, a ButtonAction) {
 		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventDoublePress)
 	case Long:
 		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventLongPress)
-	default:
-		if bd.SynthesiseButtons {
-			m.SynthesiseButtonInput(b, a)
-		}
-	}
-}
 
-const PressActionTimeout = 300 * time.Millisecond
-
-func (m *Manager) SynthesiseButtonInput(b *Button, a ButtonAction) {
-	pa := b.LastAction
-	b.LastAction = a
-
-	b.ActionTime = time.Now()
-
-	if a == Held && pa != Held {
+	case Held:
 		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventLongPress)
-	}
-
-	if a == Release && pa == Press {
-		if b.PressChain == 1 {
-			b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventDoublePress)
-			b.LastAction = None
-			b.PressChain = 0
-		} else {
-			b.PressChain = 1
-		}
-	} else if a == Release && pa == Held {
-		b.LastAction = None
-	}
-}
-
-func (m *Manager) SynthesiseButtonProcess(b *Button) {
-	if b.LastAction == Release && time.Since(b.ActionTime) > PressActionTimeout {
-		b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventSinglePress)
-		b.LastAction = None
-		b.PressChain = 0
-	}
-}
-
-func (m *Manager) Run(ctx context.Context) {
-	ticker := time.NewTicker(100 * time.Millisecond)
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			for _, bd := range m.Devices {
-				if bd.SynthesiseButtons {
-					for _, button := range bd.Buttons {
-						m.SynthesiseButtonProcess(button)
-					}
-				}
-			}
+	case Release:
+		if b.LastAction == Press {
+			b.HKSwitch.ProgrammableSwitchEvent.SetValue(characteristic.ProgrammableSwitchEventSinglePress)
 		}
 	}
+
+	b.LastAction = a
 }
 
 func (m *Manager) UpdateHomeKit() {

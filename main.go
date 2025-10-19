@@ -31,8 +31,10 @@ func main() {
 	b := Manager{logger: logger, Devices: map[string]*ButtonDevice{}, HKManager: h}
 	m := MQTT{logger: logger, buttonmanager: b}
 
-	h.Init(ctx, *homekitDir)
-	go b.Run(ctx)
+	if err := h.Init(ctx, *homekitDir); err != nil {
+		logger.Error("Failed to init HomeKit.", "err", err)
+		panic(err)
+	}
 
 	if err := m.Start(ctx, *mqttURL); err != nil {
 		logger.Error("Failed to start MQTT client.", "err", err)

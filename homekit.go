@@ -125,6 +125,7 @@ func (h *HomeKit) constructServer(buttons []*ButtonDevice) *hap.Server {
 		sl.Id = id
 		id++
 		acc.AddS(sl.S)
+		h.logger.Debug("Service label service created.", "id", id)
 
 		accessories = append(accessories, acc)
 	}
