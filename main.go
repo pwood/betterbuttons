@@ -13,6 +13,7 @@ func main() {
 	homekitDir := flag.String("homekit-dir", "./db", "Location on disk to store HomeKit pairing state.")
 	debug := flag.Bool("debug", false, "Debug logging.")
 	mqttTopicPrefix := flag.String("mqtt-topic-prefix", "zigbee2mqtt", "MQTT topic prefix to subscribe to.")
+	mqttClientID := flag.String("mqtt-client-id", "BetterButtons", "MQTT client ID to use.")
 
 	flag.Parse()
 
@@ -23,14 +24,14 @@ func main() {
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, lvl))
-	logger.Info("Starting BetterButtons", "mqttURL", *mqttURL, "mqttPrefix", mqttTopicPrefix, "homekitDir", *homekitDir, "debug", *debug)
+	logger.Info("Starting BetterButtons", "mqttURL", *mqttURL, "mqttPrefix", mqttTopicPrefix, "mqttClientID", mqttClientID, "homekitDir", *homekitDir, "debug", *debug)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
 	h := &HomeKit{logger: logger}
 	b := Manager{logger: logger, Devices: map[string]*ButtonDevice{}, HKManager: h}
-	m := MQTT{logger: logger, buttonmanager: b, topicPrefix: *mqttTopicPrefix}
+	m := MQTT{logger: logger, buttonmanager: b, topicPrefix: *mqttTopicPrefix, clientID: *mqttClientID}
 
 	if err := h.Init(ctx, *homekitDir); err != nil {
 		logger.Error("Failed to init HomeKit.", "err", err)

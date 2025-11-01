@@ -17,11 +17,12 @@ type MQTT struct {
 	buttonmanager Manager
 	logger        *slog.Logger
 	topicPrefix   string
+	clientID      string
 }
 
 func (m *MQTT) Start(ctx context.Context, mqttUrl string) error {
 	opts := mqtt.NewClientOptions()
-	opts.ClientID = "BetterButtons"
+	opts.ClientID = m.clientID
 
 	if u, err := url.Parse(mqttUrl); err != nil {
 		return fmt.Errorf("mqtt url parse: %w", err)
