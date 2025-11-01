@@ -4,17 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/eclipse/paho.mqtt.golang"
 	"log/slog"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/eclipse/paho.mqtt.golang"
 )
 
 type MQTT struct {
 	client        mqtt.Client
 	buttonmanager Manager
 	logger        *slog.Logger
+	topicPrefix   string
 }
 
 func (m *MQTT) Start(ctx context.Context, mqttUrl string) error {
@@ -61,7 +63,7 @@ func (m *MQTT) Stop() error {
 
 func (m *MQTT) connected(c mqtt.Client) {
 	m.logger.Info("Connected to MQTT.")
-	c.Subscribe("zigbee2mqtt/bridge/devices", 1, m.messageDeviceList)
+	c.Subscribe(fmt.Sprintf("%s/bridge/devices", m.topicPrefix), 1, m.messageDeviceList)
 }
 
 func (m *MQTT) disconnected(c mqtt.Client, err error) {
@@ -70,7 +72,7 @@ func (m *MQTT) disconnected(c mqtt.Client, err error) {
 }
 
 func (m *MQTT) messageAction(c mqtt.Client, message mqtt.Message) {
-	u := DeviceUpdate{IEEEAddress: strings.TrimPrefix(message.Topic(), "zigbee2mqtt/")}
+	u := DeviceUpdate{IEEEAddress: strings.TrimPrefix(message.Topic(), fmt.Sprintf("%s/", m.topicPrefix))}
 
 	if err := json.Unmarshal(message.Payload(), &u); err != nil {
 		m.logger.Error("Unable to unmarshal action payload.", "err", err)
@@ -90,7 +92,7 @@ func (m *MQTT) messageDeviceList(c mqtt.Client, message mqtt.Message) {
 
 	for _, d := range dl {
 		if m.buttonmanager.OfferDevice(d) {
-			topic := fmt.Sprintf("zigbee2mqtt/%s", d.IEEEAddress)
+			topic := fmt.Sprintf("%s/%s", m.topicPrefix, d.IEEEAddress)
 			token := c.Subscribe(topic, 1, m.messageAction)
 
 			if !token.WaitTimeout(5 * time.Second) {
