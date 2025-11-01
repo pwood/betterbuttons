@@ -41,7 +41,7 @@ func (h *HomeKit) constructServer(buttons []*ButtonDevice) *hap.Server {
 	fs := hap.NewFsStore(h.dir)
 
 	bridge := accessory.NewBridge(accessory.Info{
-		Name:         "BetterButtons",
+		Name:         fmt.Sprintf("BetterButtons-%d", h.serialNumber),
 		SerialNumber: fmt.Sprintf("%d", h.serialNumber),
 		Manufacturer: "Peter Wood",
 		Model:        "BetterButtons",
