@@ -24,6 +24,7 @@ type HomeKit struct {
 	server       *hap.Server
 	cancelServer func()
 	logger       *slog.Logger
+	serialNumber int
 }
 
 func (h *HomeKit) Init(ctx context.Context, dir string) error {
@@ -41,7 +42,7 @@ func (h *HomeKit) constructServer(buttons []*ButtonDevice) *hap.Server {
 
 	bridge := accessory.NewBridge(accessory.Info{
 		Name:         "BetterButtons",
-		SerialNumber: "1",
+		SerialNumber: fmt.Sprintf("%d", h.serialNumber),
 		Manufacturer: "Peter Wood",
 		Model:        "BetterButtons",
 		Firmware:     versioninfo.Version,
