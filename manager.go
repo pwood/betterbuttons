@@ -99,10 +99,27 @@ func lookupRegistry(d Device) (func(*ButtonDevice), ActionMapper, bool) {
 		switch d.ModelID {
 		case "TRADFRI open/close remote":
 			return makeIKEAE1766, mappingDouble, true
+		case "RODRET wireless dimmer":
+			return makeIKEAE2201, mappingIKEAE2201, true
 		}
 	}
 
 	return nil, nil, false
+}
+
+func mappingIKEAE2201(update DeviceUpdate) (int, ButtonAction) {
+	switch update.Action {
+	case "on":
+		return 0, Single
+	case "off":
+		return 1, Single
+	case "brightness_move_up":
+		return 0, Long
+	case "brightness_move_down":
+		return 1, Long
+	}
+
+	return 0, None
 }
 
 func makeeWeLinkSNZB01P(bd *ButtonDevice) {
@@ -133,6 +150,25 @@ func makeIKEAE1766(bd *ButtonDevice) {
 			SupportsSingle: true,
 			SupportsDouble: false,
 			SupportsLong:   false,
+		},
+	}
+}
+
+func makeIKEAE2201(bd *ButtonDevice) {
+	bd.SupportsBattery = true
+
+	bd.Buttons = []*Button{
+		{
+			Name:           "On",
+			SupportsSingle: true,
+			SupportsDouble: false,
+			SupportsLong:   true,
+		},
+		{
+			Name:           "Off",
+			SupportsSingle: true,
+			SupportsDouble: false,
+			SupportsLong:   true,
 		},
 	}
 }
